@@ -16,9 +16,15 @@ pub mod pallet {
 
 	use sp_std::vec::Vec;
 
+	use scale_info::TypeInfo;
+
+	#[derive(Encode, Decode, TypeInfo)]
+	pub struct Kitty(pub [u8; 16]);
+
+	type KittyIndex = u32;
+
 	#[pallet::config]
 	pub trait Config: frame_system::Config {
-		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 	}
 
@@ -34,12 +40,17 @@ pub mod pallet {
 	pub struct Pallet<T>(_);
 
 	#[pallet::storage]
-	#[pallet::getter(fn proofs)]
-	pub(super) type Proofs<T: Config> =
-		StorageMap<_, Blake2_128Concat, Vec<u8>, (T::AccountId, T::BlockNumber), ValueQuery>;
+	#[pallet::getter(fn kitties_count)]
+	pub type KittiesCount<T> = StorageValue<_, u32>;
 
-	#[pallet::hooks]
-	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {}
+	#[pallet::storage]
+	#[pallet::getter(fn kitties)]
+	pub type Kitties<T> = StorageMap<_, Blake2_128Concat, KittyIndex, Option<Kitty>, ValueQuery>;
+
+	#[pallet::storage]
+	#[pallet::getter(fn owner)]
+	pub type Owner<T: Config> =
+		StorageMap<_, Blake2_128Concat, KittyIndex, Option<T::AccountId>, ValueQuery>;
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {}
