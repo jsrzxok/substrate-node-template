@@ -38,7 +38,21 @@
 
 ![image-20211228095720006](assets/image-20211228095720006.png)
 
+### use of undeclared type `Currency`
 
+### not found in `Config`
+
+![image-20211228153316183](assets/image-20211228153316183.png)
+
+![image-20211228153239146](assets/image-20211228153239146.png)
+
+
+
+### missing `Currency` in implementation
+
+![image-20211228153332409](assets/image-20211228153332409.png)
+
+![image-20211228153531588](assets/image-20211228153531588.png)
 
 
 
