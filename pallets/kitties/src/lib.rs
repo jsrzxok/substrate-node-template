@@ -2,11 +2,11 @@
 
 pub use pallet::*;
 
-// #[cfg(test)]
-// mod mock;
+#[cfg(test)]
+mod mock;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 #[frame_support::pallet]
 pub mod pallet {
@@ -69,21 +69,23 @@ pub mod pallet {
 		pub fn create(origin: OriginFor<T>)	-> DispatchResult {
 			let who = ensure_signed(origin)?;
 
-			let kitty_id = match Self::kitties_count() {
-				Some(id) => {
-					ensure!(id != KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
-                    id
-				},
-				None => {
-					1
-				}
-			};
+			// let kitty_id = match Self::kitties_count() {
+			// 	Some(id) => {
+			// 		ensure!(id != KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
+			// 		id
+			// 	},
+			// 	None => {
+			// 		1
+			// 	}
+			// };
+			let kitty_id = Self::next_kitty_id()?;
 
 			let dna = Self::random_value(&who);
 
-			Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
-			Owner::<T>::insert(kitty_id, Some(who.clone()));
-            KittiesCount::<T>::put(kitty_id + 1);
+			// Kitties::<T>::insert(kitty_id, Some(Kitty(dna)));
+			// Owner::<T>::insert(kitty_id, Some(who.clone()));
+            // KittiesCount::<T>::put(kitty_id + 1);
+			Self::save_db(&who, kitty_id, &dna);
 
 			Self::deposit_event(Event::KittyCreate(who, kitty_id));
 
@@ -111,15 +113,16 @@ pub mod pallet {
 			let kitty1 = Self::kitties(kitty_id_1).ok_or(Error::<T>::InvalidKittyIndex)?;
 			let kitty2 = Self::kitties(kitty_id_2).ok_or(Error::<T>::InvalidKittyIndex)?;
 
-			let kitty_id = match Self::kitties_count() {
-				Some(id) => {
-					ensure!(id != KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
-					id
-				},
-				None => {
-					1
-				}
-			};
+			// let kitty_id = match Self::kitties_count() {
+			// 	Some(id) => {
+			// 		ensure!(id != KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
+			// 		id
+			// 	},
+			// 	None => {
+			// 		1
+			// 	}
+			// };
+			let kitty_id = Self::next_kitty_id()?;
 
 			let dna1 = kitty1.0;
 			let dna2 = kitty2.0;
@@ -131,9 +134,10 @@ pub mod pallet {
 				new_dna[i] = (selector[i] & dna1[i]) | (!selector[i] & dna2[i]);
 			}
 
-			Kitties::<T>::insert(kitty_id, Some(Kitty(new_dna)));
-			Owner::<T>::insert(kitty_id, Some(who.clone()));
-			KittiesCount::<T>::put(kitty_id + 1);
+			// Kitties::<T>::insert(kitty_id, Some(Kitty(new_dna)));
+			// Owner::<T>::insert(kitty_id, Some(who.clone()));
+			// KittiesCount::<T>::put(kitty_id + 1);
+			Self::save_db(&who, kitty_id, &new_dna);
 
 			Self::deposit_event(Event::KittyBreed(who, kitty_id));
 
@@ -150,6 +154,26 @@ pub mod pallet {
 			);
 
 			payload.using_encoded(blake2_128)
+		}
+
+		fn next_kitty_id() -> sp_std::result::Result<KittyIndex, DispatchError> {
+			let kitty_id = match Self::kitties_count() {
+				Some(id) => {
+					ensure!(id != KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
+					id
+				},
+				None => {
+					1
+				}
+			};
+
+			Ok(kitty_id)
+		}
+
+		fn save_db(who: &T::AccountId, kitty_id: KittyIndex, dna: &[u8; 16]) {
+			Kitties::<T>::insert(kitty_id, Some(Kitty(*dna)));
+			Owner::<T>::insert(kitty_id, Some(who.clone()));
+			KittiesCount::<T>::put(kitty_id + 1);
 		}
 	}
 }
