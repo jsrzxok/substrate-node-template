@@ -36,7 +36,7 @@ fn transfer_kitty_works() {
         // 创建猫咪
         assert_ok!(KittiesModule::create(Origin::signed(ALICE)));
 
-        assert_eq!(KittiesCount::<Test>::get(), Some(1));
+        assert_eq!(KittiesCount::<Test>::get(), 1);
         assert_eq!(Owner::<Test>::try_get(KITTY_1), Ok(Some(ALICE)));
 
         // 转移猫咪
@@ -48,7 +48,7 @@ fn transfer_kitty_works() {
         )));
 
         // 查看猫咪当前归属
-        assert_eq!(KittiesCount::<Test>::get(), Some(1));
+        assert_eq!(KittiesCount::<Test>::get(), 1);
         assert_eq!(Owner::<Test>::try_get(KITTY_1), Ok(Some(BOB)));
     })
 }
@@ -58,7 +58,7 @@ fn breed_kitty_works() {
     new_test_ext().execute_with(|| {
         assert_ok!(KittiesModule::create(Origin::signed(ALICE)));
         assert_ok!(KittiesModule::create(Origin::signed(ALICE)));
-        assert_eq!(KittiesCount::<Test>::get(), Some(2));
+        assert_eq!(KittiesCount::<Test>::get(), 2);
         assert_eq!(Owner::<Test>::get(KITTY_1), Some(ALICE));
         assert_eq!(Owner::<Test>::get(KITTY_2), Some(ALICE));
 
@@ -68,7 +68,7 @@ fn breed_kitty_works() {
             ALICE, KITTY_3,
         )));
 
-        assert_eq!(KittiesCount::<Test>::get(), Some(3));
+        assert_eq!(KittiesCount::<Test>::get(), 3);
         assert_eq!(Owner::<Test>::get(KITTY_3), Some(ALICE));
     })
 }

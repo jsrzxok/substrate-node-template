@@ -84,6 +84,7 @@ impl pallet_kitties::Config for Test {
 	type Event = Event;
 	type Randomness = RandomnessCollectiveFlip;
 	type Currency = Balances;
+	type KittyIndex = u32;
 }
 
 // Build genesis storage according to the mock runtime.
