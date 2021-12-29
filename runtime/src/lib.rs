@@ -281,6 +281,7 @@ impl pallet_template::Config for Runtime {
 
 parameter_types! {
     pub const MaxClaimLength: u32 = 256;
+	pub const KittyReserve: u64 = 1_000;
 }
 
 impl pallet_poe::Config for Runtime {
@@ -293,6 +294,7 @@ impl pallet_kitties::Config for Runtime {
 	type Randomness = RandomnessCollectiveFlip;
 	type Currency = Balances;
 	type KittyIndex = u32;
+	type KittyReserve = KittyReserve;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

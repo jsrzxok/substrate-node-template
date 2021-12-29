@@ -31,6 +31,10 @@ parameter_types! {
 
 pub type Balance = u128;
 
+parameter_types! {
+	pub const KittyReserve: u64 = 1_000;
+}
+
 impl system::Config for Test {
 	type BaseCallFilter = frame_support::traits::Everything;
 	type BlockWeights = ();
@@ -85,13 +89,14 @@ impl pallet_kitties::Config for Test {
 	type Randomness = RandomnessCollectiveFlip;
 	type Currency = Balances;
 	type KittyIndex = u32;
+	type KittyReserve = KittyReserve;
 }
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
 	let mut t = system::GenesisConfig::default().build_storage::<Test>().unwrap().into();
 	pallet_balances::GenesisConfig::<Test> {
-		balances: vec![(1, 10000), (2, 20000), (3, 30000)],
+		balances: vec![(1, 3000), (2, 3000)],
 	}.assimilate_storage(&mut t).unwrap();
 
 	let mut ext = sp_io::TestExternalities::new(t);

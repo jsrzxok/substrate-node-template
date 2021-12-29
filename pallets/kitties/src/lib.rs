@@ -15,6 +15,7 @@ pub mod pallet {
 		traits::Randomness,
 		traits::Currency,
 		traits::ExistenceRequirement,
+		traits::ReservableCurrency,
 	};
 
 	use frame_system::pallet_prelude::*;
@@ -24,7 +25,6 @@ pub mod pallet {
 		AtLeast32BitUnsigned,
 		Bounded,  // ===> T::KittyIndex::max_value()
 		One,
-		Zero,
 	};
 
 	#[derive(Encode, Decode, TypeInfo)]
@@ -39,8 +39,10 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
 		type Randomness: Randomness<Self::Hash, Self::BlockNumber>;
-		type Currency: Currency<Self::AccountId>;
+		type Currency: Currency<Self::AccountId> + ReservableCurrency<Self::AccountId>;
 		type KittyIndex: Parameter + Member + AtLeast32BitUnsigned  + Default + Copy;
+		// 创建Kitty需要质押数量
+		type KittyReserve:Get<BalanceOf<Self>>;
 	}
 
 	#[pallet::event]
@@ -61,6 +63,8 @@ pub mod pallet {
 		InvalidKittyIndex,
 		AlreadyOwned,
 		NotForSale,
+		MoneyNotEnough,
+		NotExist,
 	}
 
 	#[pallet::pallet]
@@ -93,6 +97,10 @@ pub mod pallet {
 		pub fn create(origin: OriginFor<T>)	-> DispatchResult {
 			let who = ensure_signed(origin)?;
 
+			// 质押资产
+			T::Currency::reserve(&who, T::KittyReserve::get())
+				.map_err(|_| Error::<T>::MoneyNotEnough)?;
+
 			// let kitty_id = match Self::kitties_count() {
 			// 	Some(id) => {
 			// 		ensure!(id != T::KittyIndex::max_value(), Error::<T>::KittiesCountOverflow);
@@ -121,6 +129,18 @@ pub mod pallet {
 						kitty_id: T::KittyIndex) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			ensure!(Some(who.clone()) == Owner::<T>::get(kitty_id), Error::<T>::NotOwner);
+
+			ensure!(
+                Some(who.clone()) != Some(new_owner.clone()),
+                Error::<T>::AlreadyOwned
+            );
+
+			// 新拥有者质押资产
+			T::Currency::reserve(&new_owner, T::KittyReserve::get())
+				.map_err(|_| Error::<T>::MoneyNotEnough)?;
+			// 解除原质押资产
+			T::Currency::unreserve(&who, T::KittyReserve::get());
+
 			Owner::<T>::insert(kitty_id, Some(new_owner.clone()));
 			Self::deposit_event(Event::KittyTransfer(who, new_owner, kitty_id));
 			Ok(())
@@ -133,11 +153,11 @@ pub mod pallet {
 			let who = ensure_signed(origin)?;
 			ensure!(kitty_id_1 != kitty_id_2, Error::<T>::SameParentIndex);
 
-			ensure!(Some(who.clone()) == Owner::<T>::get(kitty_id_1), Error::<T>::NotOwner);
-			ensure!(Some(who.clone()) == Owner::<T>::get(kitty_id_2), Error::<T>::NotOwner);
-
 			let kitty1 = Self::kitties(kitty_id_1).ok_or(Error::<T>::InvalidKittyIndex)?;
 			let kitty2 = Self::kitties(kitty_id_2).ok_or(Error::<T>::InvalidKittyIndex)?;
+
+			ensure!(Some(who.clone()) == Owner::<T>::get(kitty_id_1), Error::<T>::NotOwner);
+			ensure!(Some(who.clone()) == Owner::<T>::get(kitty_id_2), Error::<T>::NotOwner);
 
 			// let kitty_id = match Self::kitties_count() {
 			// 	Some(id) => {
@@ -159,6 +179,10 @@ pub mod pallet {
 			for i in 0..dna1.len() {
 				new_dna[i] = (selector[i] & dna1[i]) | (!selector[i] & dna2[i]);
 			}
+
+			// 质押资产
+			T::Currency::reserve(&who, T::KittyReserve::get())
+				.map_err(|_| Error::<T>::MoneyNotEnough)?;
 
 			// Kitties::<T>::insert(kitty_id, Some(Kitty(new_dna)));
 			// Owner::<T>::insert(kitty_id, Some(who.clone()));
@@ -189,6 +213,7 @@ pub mod pallet {
 					who,
 					kitty_id,
 					sale_price));
+
 			Ok(())
 		}
 
@@ -196,7 +221,8 @@ pub mod pallet {
 		pub fn buy(origin: OriginFor<T>, kitty_id: T::KittyIndex) -> DispatchResult {
 			let who = ensure_signed(origin)?;
 			let kitty_owner =
-				Owner::<T>::get(kitty_id).ok_or(Error::<T>::NotOwner)?;
+				Owner::<T>::get(kitty_id).ok_or(Error::<T>::NotExist)?;
+
 			ensure!(
                 Some(who.clone()) != Some(kitty_owner.clone()),
                 Error::<T>::AlreadyOwned
@@ -212,6 +238,13 @@ pub mod pallet {
 				kitty_price,
 				ExistenceRequirement::KeepAlive,
 			)?;
+
+			// 新拥有者质押资产
+			T::Currency::reserve(&who, T::KittyReserve::get())
+				.map_err(|_| Error::<T>::MoneyNotEnough)?;
+
+			// 解除原质押资产
+			T::Currency::unreserve(&kitty_owner, T::KittyReserve::get());
 
 			Owner::<T>::insert(kitty_id, Some(who.clone()));
 			KittyPrices::<T>::remove(kitty_id);
