@@ -13,9 +13,11 @@ mod tests;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
+pub mod weights;
 
 #[frame_support::pallet]
 pub mod pallet {
+	pub use crate::weights::WeightInfo;
 	use frame_support::{dispatch::DispatchResult, pallet_prelude::*};
 	use frame_system::pallet_prelude::*;
 
@@ -24,6 +26,9 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		/// Because this pallet emits events, it depends on the runtime's definition of an event.
 		type Event: From<Event<Self>> + IsType<<Self as frame_system::Config>::Event>;
+
+		/// Information on runtime weights.
+		type WeightInfo: WeightInfo;
 	}
 
 	#[pallet::pallet]
@@ -64,7 +69,8 @@ pub mod pallet {
 	impl<T: Config> Pallet<T> {
 		/// An example dispatchable that takes a singles value as a parameter, writes the value to
 		/// storage and emits an event. This function must be dispatched by a signed extrinsic.
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		// #[pallet::weight(14_090_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(T::WeightInfo::do_something(*something))]
 		pub fn do_something(origin: OriginFor<T>, something: u32) -> DispatchResult {
 			// Check that the extrinsic was signed and get the signer.
 			// This function will return an error if the extrinsic is not signed.

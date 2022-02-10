@@ -1,5 +1,7 @@
 //! Benchmarking setup for pallet-template
 
+// #![cfg(feature = "runtime-benchmarks")]
+
 use super::*;
 
 #[allow(unused)]
@@ -9,7 +11,7 @@ use frame_system::RawOrigin;
 
 benchmarks! {
 	do_something {
-		let s in 0 .. 100;
+		let s in 0 .. 1000;
 		let caller: T::AccountId = whitelisted_caller();
 	}: _(RawOrigin::Signed(caller), s)
 	verify {
